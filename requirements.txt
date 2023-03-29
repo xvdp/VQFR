@@ -1,6 +1,6 @@
 einops
 lmdb
-numpy<1.21  # numba requires numpy<1.21,>=1.17
+numpy>=1.21  # numba requires numpy>=1.21
 opencv-python
 pyyaml
 scikit-learn
