@@ -1,5 +1,6 @@
-import cv2
 import os
+import numpy as np
+import cv2
 import torch
 from basicsr.utils import img2tensor, tensor2img
 from facexlib.utils.face_restoration_helper import FaceRestoreHelper
@@ -133,14 +134,34 @@ class VQFR_Demo():
         self.vqfr = self.vqfr.to(self.device)
 
     @torch.no_grad()
-    def enhance(self, img, fidelity_ratio=None, has_aligned=False, only_center_face=False, paste_back=True):
+    def enhance(self, img, fidelity_ratio=None, has_aligned=False, only_center_face=False, paste_back=True, size=(512,512)):
         self.face_helper.clean_all()
 
+        # from face_restoration_helper - to resolve dtype and channels
+        dtype = img.dtype
+        channels = 3
+
+        if dtype in (np.float32 or np.float64) and img.max() <= 1.:
+            _mul = 1.
+        elif dtype == np.uint16 or img.max() > 256:  # 16-bit image
+            _mul = 65535.
+            dtype = np.uint16 
+        elif dtype == np.uint8 or 256 > img.max() > 1.:
+            _mul = 255.
+            dtype = np.uint8
+        if len(img.shape) == 2:  # gray image
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            channels = 1
+        elif img.shape[2] == 4:  # RGBA image with alpha channel
+            img = img[:, :, 0:3]
+            channels = 4
+        assert isinstance(img, np.ndarray)
+
         if has_aligned:  # the inputs are already aligned
-            img = cv2.resize(img, (512, 512))
-            self.face_helper.cropped_faces = [img]
+            img = cv2.resize(img, size)
+            self.face_helper.cropped_faces = [255*img/_mul]
         else:
-            self.face_helper.read_image(img)
+            self.face_helper.read_image(255*img/_mul)
             # get face landmarks for each face
             self.face_helper.get_face_landmarks_5(only_center_face=only_center_face, eye_dist_threshold=5)
             # eye_dist_threshold=5: skip faces whose eye distance is smaller than 5 pixels
@@ -158,12 +179,16 @@ class VQFR_Demo():
             try:
                 output = self.vqfr(cropped_face_t, fidelity_ratio=fidelity_ratio)['main_dec'][0]
                 # convert to image
-                restored_face = tensor2img(output.squeeze(0), rgb2bgr=True, min_max=(-1, 1))
+                output.clamp_(-1, 1).add_(1).div_(2)
+                restored_face = output.clone().detach().cpu().numpy()[0].transpose(1, 2, 0)
+                restored_face = cv2.cvtColor(restored_face, cv2.COLOR_RGB2BGR)
+                if dtype in (np.uint8, np.uint16):
+                    restored_face = (restored_face * _mul).round().astype(dtype=dtype)
+
             except RuntimeError as error:
                 print(f'\tFailed inference for VQFR: {error}.')
                 restored_face = cropped_face
 
-            restored_face = restored_face.astype('uint8')
             self.face_helper.add_restored_face(restored_face)
 
         if not has_aligned and paste_back:

@@ -69,7 +69,10 @@ Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences
 
     # Install facexlib - https://github.com/xinntao/facexlib
     # We use face detection and face restoration helper in the facexlib package
-    pip install facexlib
+    # pip install facexlib
+    # to run 16bit images 
+    git_clone https://github.com/xvdp/facexlib && cd facexlib && pip install .
+
 
     # If you want to enhance the background (non-face) regions with Real-ESRGAN,
     # you also need to install the realesrgan package
