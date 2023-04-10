@@ -47,6 +47,8 @@ def main():
         type=str,
         default='auto',
         help='Image extension. Options: auto | jpg | png, auto means using the same extension as inputs. Default: auto')
+    parser.add_argument('-m', '--models_dir', type=str, default='experiments/pretrained_models',
+                        help='folder where models will be stored')
     args = parser.parse_args()
 
     # ------------------------ input & output ------------------------
@@ -95,7 +97,7 @@ def main():
         raise ValueError(f'Wrong model version {args.version}.')
 
     # determine model paths
-    model_path = os.path.join('experiments/pretrained_models', model_name + '.pth')
+    model_path = os.path.join(args.models_dir, model_name + '.pth')
     if not os.path.isfile(model_path):
         raise ValueError(f'Model {model_name} does not exist.')
 
