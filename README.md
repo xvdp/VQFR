@@ -81,7 +81,9 @@ Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences
 
 ## :zap: Quick Inference
 
-Download pre-trained **VQFRv1/v2 models** [[Google Drive](https://drive.google.com/drive/folders/1lczKYEbARwe27FJlKoFdng7UnffGDjO2?usp=sharing)].
+Download pre-trained **VQFRv1 models** [[Google Drive](https://drive.google.com/drive/folders/1lczKYEbARwe27FJlKoFdng7UnffGDjO2?usp=sharing)].
+
+VQFR_v2 models can be downloaded from https://github.com/TencentARC/VQFR/releases/download/v2.0.0
 
 **Inference**
 
