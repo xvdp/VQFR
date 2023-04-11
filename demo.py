@@ -5,7 +5,7 @@ import numpy as np
 import os
 import torch
 from basicsr.utils import imwrite
-
+from basicsr.utils.download_util import load_file_from_url
 from vqfr.demo_util import VQFR_Demo
 
 
@@ -47,7 +47,7 @@ def main():
         type=str,
         default='auto',
         help='Image extension. Options: auto | jpg | png, auto means using the same extension as inputs. Default: auto')
-    parser.add_argument('-m', '--models_dir', type=str, default='experiments/pretrained_models',
+    parser.add_argument('-m', '--models_dir', type=str, default='',
                         help='folder where models will be stored')
     args = parser.parse_args()
 
@@ -61,7 +61,15 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
+    # cache pth for all models
+    if args.models_dir:
+        os.makedirs(args.models_dir, exist_ok=True)
+        torch.hub.set_dir(args.models_dir)
+    else:
+        args.models_dir='experiments/pretrained_models'
+
     # ------------------------ set up background upsampler ------------------------
+
     if args.bg_upsampler == 'realesrgan':
         if not torch.cuda.is_available():  # CPU
             import warnings
@@ -71,10 +79,19 @@ def main():
         else:
             from basicsr.archs.rrdbnet_arch import RRDBNet
             from realesrgan import RealESRGANer
+
+            realesgan_model = 'RealESRGAN_x2plus.pth'
+            realesgan_path = os.path.join(args.models_dir, realesgan_model)
+            if not os.path.isfile(realesgan_path):
+                url = os.path.join('https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1',
+                                   realesgan_model)
+                load_file_from_url(url=url, model_dir=args.models_dir, progress=True, file_name=None)
+                assert os.path.isfile(realesgan_path), f"could not downlaod {realesgan_model}"
+
             model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
             bg_upsampler = RealESRGANer(
                 scale=2,
-                model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
+                model_path=realesgan_path,
                 model=model,
                 tile=args.bg_tile,
                 tile_pad=10,

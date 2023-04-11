@@ -122,7 +122,8 @@ class VQFR_Demo():
             det_model='retinaface_resnet50',
             save_ext='png',
             use_parse=True,
-            device=self.device)
+            device=self.device,
+            model_rootpath=os.path.dirname(model_path)) # cache_dir for all models
 
         loadnet = torch.load(model_path)
         if 'params_ema' in loadnet:
@@ -141,7 +142,7 @@ class VQFR_Demo():
         dtype = img.dtype
         channels = 3
 
-        if dtype in (np.float32 or np.float64) and img.max() <= 1.:
+        if dtype in (np.float32, np.float64) and img.max() <= 1.:
             _mul = 1.
         elif dtype == np.uint16 or img.max() > 256:  # 16-bit image
             _mul = 65535.
