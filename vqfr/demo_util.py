@@ -160,9 +160,9 @@ class VQFR_Demo():
 
         if has_aligned:  # the inputs are already aligned
             img = cv2.resize(img, size)
-            self.face_helper.cropped_faces = [255*img/_mul]
+            self.face_helper.cropped_faces = [img]
         else:
-            self.face_helper.read_image(255*img/_mul)
+            self.face_helper.read_image(255*(img/_mul))
             # get face landmarks for each face
             self.face_helper.get_face_landmarks_5(only_center_face=only_center_face, eye_dist_threshold=5)
             # eye_dist_threshold=5: skip faces whose eye distance is smaller than 5 pixels
@@ -173,15 +173,18 @@ class VQFR_Demo():
         # face restoration
         for cropped_face in self.face_helper.cropped_faces:
             # prepare data
-            cropped_face_t = img2tensor(cropped_face / 255., bgr2rgb=True, float32=True)
+            cropped_face_t = img2tensor(cropped_face /_mul, bgr2rgb=True, float32=True)
             normalize(cropped_face_t, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True)
             cropped_face_t = cropped_face_t.unsqueeze(0).to(self.device)
 
             try:
                 output = self.vqfr(cropped_face_t, fidelity_ratio=fidelity_ratio)['main_dec'][0]
+                if output.ndim == 4:
+                    output = output[0]
+
                 # convert to image
                 output.clamp_(-1, 1).add_(1).div_(2)
-                restored_face = output.clone().detach().cpu().numpy()[0].transpose(1, 2, 0)
+                restored_face = output.clone().detach().cpu().numpy().transpose(1, 2, 0)
                 restored_face = cv2.cvtColor(restored_face, cv2.COLOR_RGB2BGR)
                 if dtype in (np.uint8, np.uint16):
                     restored_face = (restored_face * _mul).round().astype(dtype=dtype)

@@ -124,7 +124,6 @@ def main():
     for img_path in img_list:
         # read image
         img_name = os.path.basename(img_path)
-        print(f'Processing {img_name} ...')
         basename, ext = os.path.splitext(img_name)
         input_img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 
@@ -138,6 +137,8 @@ def main():
 
         # save faces
         for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
+            cropped_face = cropped_face.astype(dtype=input_img.dtype)
+            restored_face = restored_face.astype(dtype=input_img.dtype)
             # save cropped face
             save_crop_path = os.path.join(args.output, 'cropped_faces', f'{basename}_{idx:02d}.png')
             imwrite(cropped_face, save_crop_path)
@@ -150,7 +151,7 @@ def main():
             imwrite(restored_face, save_restore_path)
             # save comparison image
             cmp_img = np.concatenate((cropped_face, restored_face), axis=1)
-            imwrite(cmp_img, os.path.join(args.output, 'cmp', f'{basename}_{idx:02d}.png'))
+            imwrite(cmp_img.astype(input_img.dtype), os.path.join(args.output, 'cmp', f'{basename}_{idx:02d}.png'))
 
         # save restored img
         if restored_img is not None:
@@ -163,7 +164,7 @@ def main():
                 save_restore_path = os.path.join(args.output, 'restored_imgs', f'{basename}_{args.suffix}.{extension}')
             else:
                 save_restore_path = os.path.join(args.output, 'restored_imgs', f'{basename}.{extension}')
-            imwrite(restored_img, save_restore_path)
+            imwrite(restored_img.astype(input_img.dtype), save_restore_path)
 
     print(f'Results are in the [{args.output}] folder.')
 
